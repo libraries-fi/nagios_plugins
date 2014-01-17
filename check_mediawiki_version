@@ -53,6 +53,9 @@ my $mw_dl_url = "http://www.mediawiki.org/wiki/Download";
 # placeholder of the latest mediawiki version from $mw_dl_url
 my $mw_latest_version;
 
+# placehoder for version numbers
+my @version_numbers;
+
 my $debug    = undef;
 my $response = undef;
 
@@ -165,21 +168,20 @@ $mech->get($mw_dl_url);
 
 if ( $mech->success ) {
 
-    # get the link matching the string 'Download'
-    # in $latest we get an array reference, we dereference it in $latest_url
-    my $latest = $mech->find_link( text_regex => qr/download/ );
+    # get the links matching the string 'Download'
+    my @latests_list = $mech->find_all_links( text_regex => qr/download/ );
+    
+    foreach ( @latests_list ) {
+        if ( $_->url =~ m/.*mediawiki-(.*)\.tar\.gz/ ) {
+            push(@version_numbers, $1);
+        }
+    }
 
-    my $latest_url = $latest->url;
+    my $latest_url = $latests_list[0]->url;
 
     print "Mediawiki latest version link is |$latest_url|\n" if defined $debug;
 
-    # We are just interested in the version number, so discard the rest and save
-    # it in $1
-    if ( $latest_url =~ m/.*mediawiki-(.*)\.tar\.gz/ ) {
-        $mw_latest_version = $1;
-    }
-
-    print "Latest version of Mediawiki is: $mw_latest_version.\n"
+    print "Latest versions of Mediawiki are: $version_numbers[0], $version_numbers[1], $version_numbers[2].\n"
       if defined $debug;
 }
 else {
@@ -189,13 +191,13 @@ else {
 
 # now compare both versions. Unless they are equal, warn
 
-if ( $mw_site_version eq $mw_latest_version ) {
+if ( $mw_site_version eq $version_numbers[0] or $mw_site_version eq $version_numbers[1] or $mw_site_version eq $version_numbers[2]) {
     print "OK: mediawiki site version is up to date ($mw_site_version)\n";
     exit 0;
 }
 else {
     print
-"WARNING: mediawiki latest version is $mw_latest_version, but our site version is $mw_site_version\n";
+"WARNING: mediawiki latest version is $version_numbers[0], but our site version is $mw_site_version\n";
     exit 1;
 }
 
